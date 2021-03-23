@@ -1,12 +1,4 @@
-﻿/*
-* INF1015 - TD no. 4 : Programme principal de la partie 4 du TD en programmation orientée objet.
-* \file		td4.cpp
-* \author	E.Barbeau et L-A.Reau
-* \date		21 mars 2021
-* Créé le	9 fevrier 2021
-*/
-
-// Solutionnaire du TD3 INF1015 hiver 2021
+﻿// Solutionnaire du TD4 INF1015 hiver 2021
 // Par Francois-R.Boyer@PolyMtl.ca
 
 #pragma region "Includes"//{
@@ -14,25 +6,52 @@
 
 #include "structures_td5.hpp"      // Structures de données pour la collection de films en mémoire.
 
-#include "bibliotheque_cours.hpp"
-#include "verification_allocation.hpp" // Nos fonctions pour le rapport de fuites de mémoire.
-
 #include <iostream>
-#include <iomanip> // ajouté
+#include <iomanip>
 #include <fstream>
 #include <string>
 #include <limits>
 #include <algorithm>
 #include <sstream>
+#include <forward_list>
 #include "cppitertools/range.hpp"
+#include "cppitertools/enumerate.hpp"
 #include "gsl/span"
-#include "debogage_memoire.hpp"        // Ajout des numéros de ligne des "new" dans le rapport de fuites.  Doit être après les include du système, qui peuvent utiliser des "placement new" (non supporté par notre ajout de numéros de lignes).
+
+#if __has_include("gtest/gtest.h")
+#include "gtest/gtest.h"
+#endif
+
+#if __has_include("bibliotheque_cours.hpp")
+#include "bibliotheque_cours.hpp"
+#define BIBLIOTHEQUE_COURS_INCLUS
+using bibliotheque_cours::cdbg;
+#else
+auto& cdbg = clog;
+#endif
+
+#if __has_include("verification_allocation.hpp")
+#include "verification_allocation.hpp"
+#include "debogage_memoire.hpp"  //NOTE: Incompatible avec le "placement new", ne pas utiliser cette entête si vous utilisez ce type de "new" dans les lignes qui suivent cette inclusion.
+#endif
+
+void initialiserBibliothequeCours([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
+{
+	#ifdef BIBLIOTHEQUE_COURS_INCLUS
+	bibliotheque_cours::activerCouleursAnsi();  // Permet sous Windows les "ANSI escape code" pour changer de couleurs https://en.wikipedia.org/wiki/ANSI_escape_code ; les consoles Linux/Mac les supportent normalement par défaut.
+
+	// cdbg.setTee(&clog);  // Décommenter cette ligne pour que cdbg affiche sur la console en plus de la "Sortie" du débogueur.
+	
+	bibliotheque_cours::executerGoogleTest(argc, argv); // Attention de ne rien afficher avant cette ligne, sinon l'Explorateur de tests va tenter de lire votre affichage comme un résultat de test.
+	#endif
+}
+
 using namespace std;
 using namespace iter;
 using namespace gsl;
- 
+
 #pragma endregion//}
- 
+
 typedef uint8_t UInt8;
 typedef uint16_t UInt16;
 
@@ -60,30 +79,13 @@ string lireString(istream& fichier)
 
 #pragma endregion//}
 
-void lireLivre(string nomFichier, vector<Item*>& bibliotheque)
-{
-	ifstream fichier(nomFichier, ios::binary);
-	if (fichier.fail() != 0)
-	{
-		cout << "Il y a eu une erreur dans l'ouverture du fichier " << nomFichier << endl;
-		fichier.exceptions(ios::failbit);
-	}
-
-	while (!ws(fichier).eof()) {
-		Livre* livre = new Livre;
-		fichier >> quoted(livre->titre) >> livre->anneeSortie >> quoted(livre->auteur_) >> livre->nPages_ >> livre->millionCopieVendues_;
-
-		bibliotheque.push_back(livre);
-	}
-}
-
 // Fonctions pour ajouter un Film à une ListeFilms.
 //[
 void ListeFilms::changeDimension(int nouvelleCapacite)
 {
 	Film** nouvelleListe = new Film*[nouvelleCapacite];
 	
-	if (elements != nullptr) {  // Noter que ce test n'est pas nécessaire puique nElements_ sera zéro si elements_ est nul, donc la boucle ne tentera pas de faire de copie, et on a le droit de faire delete sur un pointeur nul (ça ne fait rien).
+	if (elements != nullptr) {  // Noter que ce test n'est pas nécessaire puique nElements sera zéro si elements est nul, donc la boucle ne tentera pas de faire de copie, et on a le droit de faire delete sur un pointeur nul (ça ne fait rien).
 		nElements = min(nouvelleCapacite, nElements);
 		for (int i : range(nElements))
 			nouvelleListe[i] = elements[i];
@@ -107,17 +109,17 @@ void ListeFilms::ajouterFilm(Film* film)
 // On a juste fait une version const qui retourne un span non const.  C'est valide puisque c'est la struct qui est const et non ce qu'elle pointe.  Ça ne va peut-être pas bien dans l'idée qu'on ne devrait pas pouvoir modifier une liste const, mais il y aurais alors plusieurs fonctions à écrire en version const et non-const pour que ça fonctionne bien, et ce n'est pas le but du TD (il n'a pas encore vraiment de manière propre en C++ de définir les deux d'un coup).
 span<Film*> ListeFilms::enSpan() const { return span(elements, nElements); }
 
-void ListeFilms::enleverFilm(const Film* film)
-{
-	for (Film*& element : enSpan()) {  // Doit être une référence au pointeur pour pouvoir le modifier.
-		if (element == film) {
-			if (nElements > 1)
-				element = elements[nElements - 1];
-			nElements--;
-			return;
-		}
-	}
-}
+//void ListeFilms::enleverFilm(const Film* film)  // Pas utile dans ce TD
+//{
+//	for (Film*& element : enSpan()) {  // Doit être une référence au pointeur pour pouvoir le modifier.
+//		if (element == film) {
+//			if (nElements > 1)
+//				element = elements[nElements - 1];
+//			nElements--;
+//			return;
+//		}
+//	}
+//}
 //]
 
 // Fonction pour trouver un Acteur par son nom dans une ListeFilms, qui retourne un pointeur vers l'acteur, ou nullptr si l'acteur n'est pas trouvé.  Devrait utiliser span.
@@ -165,7 +167,7 @@ Film* lireFilm(istream& fichier, ListeFilms& listeFilms)
 	film->acteurs = ListeActeurs(nActeurs);  // On n'a pas fait de méthode pour changer la taille d'allocation, seulement un constructeur qui prend la capacité.  Pour que cette affectation fonctionne, il faut s'assurer qu'on a un operator= de move pour ListeActeurs.
 	cout << "Création Film " << film->titre << endl;
 
-	for ([[maybe_unused]] auto i : range(nActeurs)) {  // On peut aussi mettre nElements_ avant et faire un span, comme on le faisait au TD précédent.
+	for ([[maybe_unused]] auto i : range(nActeurs)) {  // On peut aussi mettre nElements avant et faire un span, comme on le faisait au TD précédent.
 		film->acteurs.ajouter(lireActeur(fichier, listeFilms));
 	}
 
@@ -189,12 +191,12 @@ ListeFilms creerListe(string nomFichier)
 
 // Fonction pour détruire une ListeFilms et tous les films qu'elle contient.
 //[
-//NOTE: La bonne manière serait que la liste sache si elle possède, plutôt qu'on le dise au moment de la destruction, et que ceci soit le destructeur.  Mais ça aurait complexifié le TD2 de demander une solution de ce genre, d'où le fait qu'on a dit de le mettre dans une méthode.
-void ListeFilms::detruire(bool possedeLesFilms)
+// On détruit sans détruire les films. On n'a pas demandé de refaire la lecture des films directement avec des pointeurs intelligents. On n'a pas demandé non plus de remplacer la méthode "detruire" par un destructeur.
+void ListeFilms::detruire()
 {
-	if (possedeLesFilms)
-		for (Film* film : enSpan())
-			delete film;
+	//if (possedeLesFilms)  // Pas utile dans ce TD.
+	//	for (Film* film : enSpan())
+	//		delete film;
 	delete[] elements;
 }
 //]
@@ -205,179 +207,161 @@ ostream& operator<< (ostream& os, const Acteur& acteur)
 	return os << "  " << acteur.nom << ", " << acteur.anneeNaissance << " " << acteur.sexe << endl;
 }
 
-// Fonction pour afficher un film avec tous ces acteurs (en utilisant la fonction afficherActeur ci-dessus).
+// Fonctions pour afficher les Item, Film, Livre ...
 //[
-ostream& operator<< (ostream& os, const Film& film)
+ostream& operator<< (ostream& os, const Item& item)
 {
-	os << "Titre: " << film.titre << endl;
-	os << "  Année: " << film.anneeSortie << "  Réalisateur: " << film.realisateur << endl;
-	os << "  Recette: " << film.recette << "M$" << endl;
-
-	os << "Acteurs:" << endl;
-	for (const shared_ptr<Acteur>& acteur : film.acteurs.enSpan())
-		os << *acteur;
+	item.afficherSur(os);
 	return os;
 }
+
+void Item::afficherSur(ostream& os) const
+{
+	os << "Titre: " << titre << "  Année:" << anneeSortie << endl;
+}
+
+void Film::afficherSpecifiqueSur(ostream& os) const
+{
+	os << "  Réalisateur: " << realisateur << endl;
+	os << "  Recette: " << recette << "M$" << endl;
+	os << "Acteurs:" << endl;
+	for (auto&& acteur : acteurs.enSpan())
+		os << *acteur;
+}
+
+void Film::afficherSur(ostream& os) const
+{
+	Item::afficherSur(os);
+	Film::afficherSpecifiqueSur(os);
+}
+
+void Livre::afficherSpecifiqueSur(ostream& os) const
+{
+	os << "  Auteur: " << auteur << endl;
+	os << "  Vendus: " << copiesVendues << "M  Pages: " << nPages << endl;
+}
+
+void Livre::afficherSur(ostream& os) const
+{
+	Item::afficherSur(os);
+	Livre::afficherSpecifiqueSur(os);
+}
+
+void FilmLivre::afficherSur(ostream& os) const
+{
+	Item::afficherSur(os);
+	os << "Combo:" << endl;
+	// L'affichage comme l'exemple sur Discord est accepté, ici on montre comment on pourrait séparer en deux méthodes pour ne pas avoir le même titre d'Item affiché plusieurs fois.
+	Film::afficherSpecifiqueSur(os);
+	os << "Livre:" << endl;
+	Livre::afficherSpecifiqueSur(os);
+}
+
 //]
 
-// Pas demandé dans l'énoncé de tout mettre les affichages avec surcharge, mais pourquoi pas.
-ostream& operator<< (ostream& os, const ListeFilms& listeFilms)
+// Pourrait être une méthode static pour construire un Livre à partir des données du fichier (pas encore vu les méthodes static dans le cours), ou un constructeur avec tag.  On a fait un constructeur explicit pour ne pas qu'un istream puisse est converti implicitement en livre, mais le tag n'était pas nécessaire puisqu'on avait une seule version de ce constructeur.  On a aussi décidé de faire une méthode pour lire (qui pourrait être utilisée par un opérateur, mais pas nécessaire ici).  La méthode pourrait être virtuelle si on avait besoin de faire la lecture selon le type dynamique mais ici on sais le type statiquement.
+void Item::lireDe(istream& is)
 {
-	static const string ligneDeSeparation = //[
-		"\033[32m────────────────────────────────────────\033[0m\n";
-	os << ligneDeSeparation;
-	for (const Film* film : listeFilms.enSpan()) {
-		os << *film << ligneDeSeparation;
-	}
-	return os;
+	is >> quoted(titre) >> anneeSortie;
+}
+void Livre::lireDe(istream& is)
+{
+	Item::lireDe(is);
+	is >> quoted(auteur) >> copiesVendues >> nPages;
+}
+Livre::Livre(istream& is) {
+	lireDe(is);
 }
 
-void Item ::affichage(ostream& out) const 
+
+template <typename T>
+//void afficherListeItems(span<unique_ptr<Item>> listeItems)
+void afficherListeItems(T listeItems)
 {
-	out << "Titre: " << titre << endl;
-	out << "  Année: " << anneeSortie;
-};
-
-void Film::affichage(ostream& out) const 
-{
-	Item::affichage(out);
-
-	cout << "  Réalisateur: " << realisateur << endl;
-	cout << "  Recette: " << recette << "M$" << endl;
-
-	cout << "Acteurs: " << endl;
-	for (const shared_ptr<Acteur>& acteur : acteurs.enSpan())
-		cout << *acteur;																				  
-}
-
-void Livre::affichage(ostream& out) const 
-{
-	Item::affichage(out);
-	cout << "  Auteur: " << auteur_ << endl;
-	cout << "  Nombre de copies vendues: " << millionCopieVendues_ << " millions" << endl;
-	cout << "  Nombre de pages: " << nPages_ << endl;
-}
-
-void FilmLivre::affichage(ostream& out) const
-{
-	Film::affichage(out);
-	Livre::affichage(out);
-}
-
-void afficherListeItems(vector<Item*> liste) 
-{
-	static const string ligneDeSeparation = //[
-		"\033[32m────────────────────────────────────────\033[0m\n";
+	static const string ligneDeSeparation = "\033[32m────────────────────────────────────────\033[0m\n";
 	cout << ligneDeSeparation;
-	for (auto item : liste)
-		cout << item << ligneDeSeparation;
+	for (auto&& item : listeItems) {
+		cout << *item << ligneDeSeparation;
+	}
 }
 
-int main()
+#pragma region "Exemples de tests unitaires"//{
+#ifdef TEST
+// Pas demandés dans ce TD mais sert d'exemple.
+
+TEST(tests_ListeFilms, tests_simples) {
+	ListeFilms li;
+	EXPECT_EQ(li.size(), 0);
+	EXPECT_EQ(li.capacity(), 0);
+	Film a, b, c;
+	li.ajouterFilm(&a);
+	li.ajouterFilm(&b);
+	li.ajouterFilm(&c);
+	EXPECT_EQ(li.size(), 3);
+	EXPECT_GE(li.capacity(), 3);
+	EXPECT_EQ(li[0], &a);
+	EXPECT_EQ(li[1], &b);
+	EXPECT_EQ(li[2], &c);
+	li.detruire();
+}
+
+TEST(tests_ListeFilms, trouver) {
+	ListeFilms li;
+	Film films[3];
+	string realisateurs[] = {"a","b","c","e"};
+	for (auto&& [i,f] : enumerate(films)) {
+		f.realisateur = realisateurs[i];
+		li.ajouterFilm(&f);
+	}
+	for (auto&& [i,r] : enumerate(realisateurs)) {
+		Film* film = li.trouver([&](const Film& f) { return f.realisateur == r; });
+		// Le << après EXPECT_... permet d'afficher quelque chose en cas d'échec du test. Dans ce cas-ci, on veut savoir pour quel i ça a échoué.
+		EXPECT_EQ(film, i < size(films) ? &films[i] : nullptr) << "  pour i=" << i;
+	}
+	li.detruire();
+}
+
+#endif
+#pragma endregion//}
+
+int main(int argc, char* argv[])
 {
-	#ifdef VERIFICATION_ALLOCATION_INCLUS
-	bibliotheque_cours::VerifierFuitesAllocations verifierFuitesAllocations;
-	#endif
-	bibliotheque_cours::activerCouleursAnsi();  // Permet sous Windows les "ANSI escape code" pour changer de couleurs https://en.wikipedia.org/wiki/ANSI_escape_code ; les consoles Linux/Mac les supportent normalement par défaut.
+	initialiserBibliothequeCours(argc, argv);
+
+	//int* fuite = new int; //TODO: Enlever cette ligne après avoir vérifié qu'il y a bien un "Detected memory leak" de "4 bytes" affiché dans la "Sortie", qui réfère à cette ligne du programme.
 
 	static const string ligneDeSeparation = "\n\033[35m════════════════════════════════════════\033[0m\n";
 
-	ListeFilms listeFilms = creerListe("films.bin");
+	vector<unique_ptr<Item>> items;
 	
-	cout << ligneDeSeparation << "Le premier film de la liste est:" << endl;
-	// Le premier film de la liste.  Devrait être Alien.
-	cout << *listeFilms[0];
-
-	// Tests chapitre 7:
-	ostringstream tamponStringStream;
-	tamponStringStream << *listeFilms[0];
-	string filmEnString = tamponStringStream.str();
-	assert(filmEnString == 
-		"Titre: Alien\n"
-		"  Année: 1979  Réalisateur: Ridley Scott\n"
-		"  Recette: 203M$\n"
-		"Acteurs:\n"
-		"  Tom Skerritt, 1933 M\n"
-		"  Sigourney Weaver, 1949 F\n"
-		"  John Hurt, 1940 M\n"
-	);
-
-	cout << ligneDeSeparation << "Les films sont:" << endl;
-	// Affiche la liste des films.  Il devrait y en avoir 7.
-	cout << listeFilms;
-
-	listeFilms.trouverActeur("Benedict Cumberbatch")->anneeNaissance = 1976;
-
-	// Tests chapitres 7-8:
-	// Les opérations suivantes fonctionnent.
-	Film skylien = *listeFilms[0];
-	skylien.titre = "Skylien";
-	skylien.acteurs[0] = listeFilms[1]->acteurs[0];
-	skylien.acteurs[0]->nom = "Daniel Wroughton Craig";
-	cout << ligneDeSeparation
-		<< "Les films copiés/modifiés, sont:\n"
-		<< skylien << *listeFilms[0] << *listeFilms[1] << ligneDeSeparation;
-	assert(skylien.acteurs[0]->nom == listeFilms[1]->acteurs[0]->nom);
-	assert(skylien.acteurs[0]->nom != listeFilms[0]->acteurs[0]->nom);
-
-	// Tests chapitre 10:
-	auto film955 = listeFilms.trouver([](const auto& f) { return f.recette == 955; });
-	cout << "\nFilm de 955M$:\n" << *film955;
-	assert(film955->titre == "Le Hobbit : La Bataille des Cinq Armées");
-	assert(listeFilms.trouver([](const auto&) { return false; }) == nullptr); // Pour la couveture de code: chercher avec un critère toujours faux ne devrait pas trouver.
-
-	// Tests chapitre 9:
-	Liste<string> listeTextes(2);
-	listeTextes.ajouter(make_shared<string>("Bonjour"));
-	listeTextes.ajouter(make_shared<string>("Allo"));
-	Liste<string> listeTextes2 = listeTextes;
-	listeTextes2[0] = make_shared<string>("Hi");
-	*listeTextes2[1] = "Allo!";
-	assert(*listeTextes[0] == "Bonjour");
-	assert(*listeTextes[1] == *listeTextes2[1]);
-	assert(*listeTextes2[0] == "Hi");
-	assert(*listeTextes2[1] == "Allo!");
-	listeTextes = move(listeTextes2);  // Pas demandé, mais comme j'ai fait la méthode on va la tester; noter que la couverture de code dans VisualStudio ne montre pas la couverture des constructeurs/opérateurs= =default.
-	assert(*listeTextes[0] == "Hi" && *listeTextes[1] == "Allo!");
-
-
-	// TODO - 2 : Creation vector
-	vector <Item*> bibliotheque;
-	for (Film* film : listeFilms.enSpan())
-		bibliotheque.push_back(film);
-	lireLivre("livres.txt", bibliotheque);
-
-
-	// TODO - 3 : Affichage de la bibliotheque
-	cout << ligneDeSeparation;
-	cout << "Les items contenus dans la bibliotheque sont :" << endl;
-	afficherListeItems(bibliotheque);
-
-
-	// TODO - 4 : Creation d'un FilmLivre, combinaison d'un Film et d'un Livre ayant le meme titre
-	FilmLivre* unFilmLivre = new FilmLivre(dynamic_cast<Film*>(bibliotheque[4]), 
-										   dynamic_cast<Livre*>(bibliotheque[9])) ;
-	cout << "\nLe combo FilmLivre du Hobbit est :\n" << endl;
-	cout << unFilmLivre << endl;
-	delete unFilmLivre;
-
-	// Détruire tous les livres dans la bibliotheque
-	for (auto& item : bibliotheque) {
-		if (Livre* livre = dynamic_cast<Livre*>(item))
-			delete livre;
+	{
+		ListeFilms listeFilms = creerListe("films.bin");
+		for (auto&& film : listeFilms.enSpan())
+			items.push_back(unique_ptr<Item>(film));  // On transert la possession.
+		listeFilms.detruire();
 	}
 
-	// Détruit et enlève le premier film de la liste (Alien).
-	delete listeFilms[0];
-	listeFilms.enleverFilm(listeFilms[0]);
+	{
+		ifstream fichier("livres.txt");
+		fichier.exceptions(ios::failbit);  // Pas demandé mais permet de savoir s'il y a une erreur de lecture.
+		while (!ws(fichier).eof())
+			items.push_back(make_unique<Livre>(fichier));
+	}
+	
+	items.push_back(make_unique<FilmLivre>(dynamic_cast<Film&>(*items[4]), dynamic_cast<Livre&>(*items[9])));  // On ne demandait pas de faire une recherche; serait direct avec la matière du TD5.
 
-	cout << ligneDeSeparation << "Les films sont maintenant:" << endl;
-	cout << listeFilms;
+	afficherListeItems(items);
 
-	// Pour une couverture avec 0% de lignes non exécutées:
-	listeFilms.enleverFilm(nullptr); // Enlever un film qui n'est pas dans la liste (clairement que nullptr n'y est pas).
-	assert(listeFilms.size() == 6);
 
-	// Détruire tout avant de terminer le programme.
-	listeFilms.detruire(true);
+	// TODO - 1 : Version template de la méthode afficherListeItems
+
+
+	forward_list<unique_ptr<Item>&> listeLie;
+
+	for (auto& item : items)
+		listeLie.push_front(item.get());
+
+
+	// TODO - 0 (TD5) : Version template de la méthode afficherListeItems
+
 }
