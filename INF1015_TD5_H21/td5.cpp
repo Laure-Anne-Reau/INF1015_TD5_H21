@@ -217,7 +217,8 @@ ostream& operator<< (ostream& os, const Item& item)
 
 void Item::afficherSur(ostream& os) const
 {
-	os << "Titre: " << titre << "  Année:" << anneeSortie << endl;
+	// os << "Titre: " << titre << "  Année:" << anneeSortie << endl;
+	os << "Titre: " << titre << endl;
 }
 
 void Film::afficherSpecifiqueSur(ostream& os) const
@@ -232,7 +233,7 @@ void Film::afficherSpecifiqueSur(ostream& os) const
 void Film::afficherSur(ostream& os) const
 {
 	Item::afficherSur(os);
-	Film::afficherSpecifiqueSur(os);
+	//Film::afficherSpecifiqueSur(os);
 }
 
 void Livre::afficherSpecifiqueSur(ostream& os) const
@@ -244,17 +245,17 @@ void Livre::afficherSpecifiqueSur(ostream& os) const
 void Livre::afficherSur(ostream& os) const
 {
 	Item::afficherSur(os);
-	Livre::afficherSpecifiqueSur(os);
+	//Livre::afficherSpecifiqueSur(os);
 }
 
 void FilmLivre::afficherSur(ostream& os) const
 {
 	Item::afficherSur(os);
-	os << "Combo:" << endl;
+	//os << "Combo:" << endl;
 	// L'affichage comme l'exemple sur Discord est accepté, ici on montre comment on pourrait séparer en deux méthodes pour ne pas avoir le même titre d'Item affiché plusieurs fois.
-	Film::afficherSpecifiqueSur(os);
-	os << "Livre:" << endl;
-	Livre::afficherSpecifiqueSur(os);
+	//Film::afficherSpecifiqueSur(os);
+	//os << "Livre:" << endl;
+	//Livre::afficherSpecifiqueSur(os);
 }
 
 //]
@@ -273,10 +274,9 @@ Livre::Livre(istream& is) {
 	lireDe(is);
 }
 
-
 template <typename T>
 //void afficherListeItems(span<unique_ptr<Item>> listeItems)
-void afficherListeItems(T listeItems)
+void afficherListeItems(T& listeItems)
 {
 	static const string ligneDeSeparation = "\033[32m────────────────────────────────────────\033[0m\n";
 	cout << ligneDeSeparation;
@@ -353,15 +353,51 @@ int main(int argc, char* argv[])
 	afficherListeItems(items);
 
 
-	// TODO - 1 : Version template de la méthode afficherListeItems
+	// TODO 1.1 - Premiere forward_list ayant l'ordre original des items
+	forward_list<Item*> listeOriginale;		
+	for (auto& element : items)
+		listeOriginale.push_front(element.get());
+	listeOriginale.reverse();
+	
+	cout << ligneDeSeparation << endl;
+	cout << "Affichage de la forward_list ordre original : " << endl;
+	afficherListeItems(listeOriginale);
 
+	// TODO 1.2 - Deuxieme forward_list ayant l'ordre original inverse des items
+	forward_list<Item*> listeInverse;		
+	for (auto& element : listeOriginale)
+		listeInverse.push_front(element);
 
-	forward_list<unique_ptr<Item>&> listeLie;
+	cout << ligneDeSeparation << endl;
+	cout << "Affichage de la forward_list a l'envers : " << endl;
+	afficherListeItems(listeInverse);
 
-	for (auto& item : items)
-		listeLie.push_front(item.get());
+	// TODO 1.3 - Troisieme forward_list ayant l'ordre original inverse des items
+	forward_list<Item*> autreListeOriginale;		
+	for (auto& element : listeOriginale)
+		autreListeOriginale.push_front(element);
+	autreListeOriginale.reverse();
 
+	cout << ligneDeSeparation << endl;
+	cout << "Affichage de la copie de la forward_list dans l'ordre original : " << endl;
+	afficherListeItems(autreListeOriginale);
 
-	// TODO - 0 (TD5) : Version template de la méthode afficherListeItems
+	// TODO 1.4 - Vecteur ayant l'ordre inverse de la liste originale
+	vector<Item*> vecteurInverse;
+	for (auto& element : listeOriginale)
+		vecteurInverse.push_back(element);
+	reverse(vecteurInverse.begin(), vecteurInverse.end());
 
+	cout << ligneDeSeparation << endl;
+	cout << "Affichage du vecteur a l'envers : " << endl;
+	afficherListeItems(vecteurInverse);
+
+	// TODO 1.5 - Afficher les acteurs du premier film (Alien)
+	Film& film = dynamic_cast<Film&>(*items[0]);
+
+	for (auto&& acteur : film.acteurs);
+	{
+
+	}
 }
+
