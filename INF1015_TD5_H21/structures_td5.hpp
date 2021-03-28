@@ -66,6 +66,20 @@ public:
 	shared_ptr<T>& operator[] (int index) { return elements[index]; }
 	span<shared_ptr<T>> enSpan() const { return span(elements.get(), nElements); }
 
+	class Iterator {
+	public:
+		Iterator() = default;
+		Iterator(shared_ptr<T>* element) : element_(element) {};
+		shared_ptr<T>& operator*() const { return *element_; }
+		Iterator& operator++() { element_++; return *this; }  
+		bool operator== (const Iterator& b) { return this->element_ == b.element_; };
+	private:	
+		shared_ptr<T>* element_;
+	};
+
+	Iterator begin() { return Iterator(&elements[0]); }
+	Iterator end() { return Iterator(&elements[nElements]); }
+
 private:
 	int capacite = 0, nElements = 0;
 	unique_ptr<shared_ptr<T>[]> elements;

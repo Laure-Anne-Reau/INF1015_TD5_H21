@@ -394,10 +394,9 @@ int main(int argc, char* argv[])
 
 	// TODO 1.5 - Afficher les acteurs du premier film (Alien)
 	Film& film = dynamic_cast<Film&>(*items[0]);
-
-	for (auto&& acteur : film.acteurs);
-	{
-
+	cout << "Les acteurs du film " << film.titre << " sont : " << endl;
+	for (auto&& acteur : film.acteurs) {
+		cout << *acteur;
 	}
 }
 
