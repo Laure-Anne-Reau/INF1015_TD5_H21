@@ -363,8 +363,9 @@ int main(int argc, char* argv[])
 	listeOriginale.reverse();
 	
 	cout << ligneDeSeparation << endl;
-	cout << "Affichage de la forward_list ordre original : " << endl;
+	cout << "1.1 Affichage de la forward_list ordre original : " << endl;
 	afficherListeItems(listeOriginale);
+
 
 	// TODO 1.2 - Deuxieme forward_list ayant l'ordre original inverse des items
 	forward_list<Item*> listeInverse;		
@@ -372,38 +373,49 @@ int main(int argc, char* argv[])
 		listeInverse.push_front(element);
 
 	cout << ligneDeSeparation << endl;
-	cout << "Affichage de la forward_list a l'envers : " << endl;
+	cout << "1.2 Affichage de la forward_list a l'envers : " << endl;
 	afficherListeItems(listeInverse);
 
-	// TODO 1.3 - Troisieme forward_list ayant l'ordre original inverse des items
-	forward_list<Item*> autreListeOriginale;		
-	for (auto& element : listeOriginale)
-		autreListeOriginale.push_front(element);
-	autreListeOriginale.reverse();	// ATTENTION A CHANGER utiliser iterateur et faire un insert_after
 
+	// TODO 1.3 - Troisieme forward_list ayant l'ordre original inverse des items
+	forward_list<Item*> autreListeOriginale;	
+	forward_list<Item*>::iterator it;
+	it = autreListeOriginale.before_begin();
+	for (auto& element : listeOriginale)
+		it = autreListeOriginale.insert_after(it, element);
+	
 	cout << ligneDeSeparation << endl;
-	cout << "Affichage de la copie de la forward_list dans l'ordre original : " << endl;
+	cout << "1.3 Affichage de la copie de la forward_list dans l'ordre original : " << endl;
 	afficherListeItems(autreListeOriginale);
 
+
 	// TODO 1.4 - Vecteur ayant l'ordre inverse de la liste originale
+	// TODO indiquer le niveau de complexite 
 	vector<Item*> vecteurInverse;
 	for (auto& element : listeOriginale)
 		vecteurInverse.push_back(element);
 	reverse(vecteurInverse.begin(), vecteurInverse.end());
 
 	cout << ligneDeSeparation << endl;
-	cout << "Affichage du vecteur a l'envers : " << endl;
+	cout << "1.4 Affichage du vecteur a l'envers : " << endl;
 	afficherListeItems(vecteurInverse);
 
+
 	// TODO 1.5 - Afficher les acteurs du premier film (Alien)
+	cout << ligneDeSeparation << endl;
+	cout << "1.5 Affichage des acteurs du premier film : " << endl << endl;
+
 	Film& film = dynamic_cast<Film&>(*items[0]);
 	cout << "Les acteurs du film " << film.titre << " sont : " << endl;
 	for (auto&& acteur : film.acteurs) {
 		cout << *acteur;
 	}
 
+
 	// TODO 2.1 - Conteneur contenant les items en ordre alphabetique
 	cout << ligneDeSeparation << endl;
+	cout << "2.1 Affichage de la map en ordre alphabetique : " << endl << endl;
+
 	map<string, Item*> conteneur;
 	for (auto& item : items)
 		conteneur[item->titre] = item.get();
@@ -411,8 +423,11 @@ int main(int argc, char* argv[])
 	for (const auto& [cle, valeur] : conteneur)
 		cout << "Cle : " << cle << endl << "Valeur : " << *valeur << endl;
 
+
 	// TODO 2.2 - Trouver un item dans le conteneur, afficher Le Hobbit
 	cout << ligneDeSeparation << endl;
+	cout << "2.2 On cherche le film The Hobbit dans le conteneur d'item :" << endl << endl;
+
 	auto recherche = conteneur.find("The Hobbit");
 	if (recherche->first == "The Hobbit")
 		cout << "Cle : " << recherche->first << endl << "Valeur : " << *recherche->second << endl;
@@ -422,26 +437,21 @@ int main(int argc, char* argv[])
 
 	// TODO 3.1 - Copier les Film dans un vecteur en une ligne
 	cout << ligneDeSeparation << endl;
+	cout << "3.1 Affichage du vecteur contenant uniquement des films : " << endl << endl;
+
 	vector<Item*> copieListe;
-	copy_if(listeOriginale.begin(), listeOriginale.end(), back_inserter(copieListe), 
-		[](Item* item) { return dynamic_cast<Film*> (item) != nullptr; });
+	copy_if(listeOriginale.begin(), listeOriginale.end(), back_inserter(copieListe),
+					[](Item* item) { return dynamic_cast<Film*> (item) != nullptr && 
+											dynamic_cast<Livre*> (item) == nullptr; });		
+					// Pour ne pas prendre le doublon "The Hobbit" avec le Film et le FilmLivre
 	afficherListeItems(copieListe);
 
 
 	// TODO 3.2 - Somme des recettes des films en une ligne
 	cout << ligneDeSeparation << endl;
-
 	int somme = transform_reduce(copieListe.begin(), copieListe.end(), 0, plus{},
 					[](Item* item) { return dynamic_cast<Film*> (item)->recette; });
-	cout << "Somme totale des recettes des films : " << somme << endl;
-
-
-	// DEBUGAGE
-
-	for (auto& film : copieListe)
-	{
-		cout << film->titre << " " << dynamic_cast<Film*> (film)->recette << endl;;
-	}
+	cout << "3.2 Somme totale des recettes des films : " << somme << endl;
 }
 
 
