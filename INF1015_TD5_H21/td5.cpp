@@ -390,11 +390,12 @@ int main(int argc, char* argv[])
 
 
 	// TODO 1.4 - Vecteur ayant l'ordre inverse de la liste originale
-	// TODO indiquer le niveau de complexite 
-	vector<Item*> vecteurInverse;
-	for (auto& element : listeOriginale)
-		vecteurInverse.push_back(element);
-	reverse(vecteurInverse.begin(), vecteurInverse.end());
+	// TODO indiquer le niveau de complexite : O(n)
+	int tailleVecteur = items.size();					// O(1)
+	vector<Item*> vecteurInverse(tailleVecteur);		// O(1)
+	int i = tailleVecteur-1;							// O(1)
+	for (auto& element : listeOriginale) { 			    // O(n)
+		vecteurInverse[i--] = element;					// O(1)
 
 	cout << ligneDeSeparation << endl;
 	cout << "1.4 Affichage du vecteur a l'envers : " << endl;
