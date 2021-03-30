@@ -66,7 +66,7 @@ public:
 	shared_ptr<T>& operator[] (int index) { return elements[index]; }
 	span<shared_ptr<T>> enSpan() const { return span(elements.get(), nElements); }
 
-	class Iterator {
+	/*class Iterator {
 	public:
 		Iterator() = default;
 		Iterator(shared_ptr<T>* element) : element_(element) {};
@@ -75,10 +75,13 @@ public:
 		bool operator== (const Iterator& b) { return this->element_ == b.element_; };
 	private:	
 		shared_ptr<T>* element_;
-	};
+	};*/
 
-	Iterator begin() { return Iterator(&elements[0]); }
-	Iterator end() { return Iterator(&elements[nElements]); }
+	//Iterator begin() { return Iterator(&elements[0]); }
+	//Iterator end() { return Iterator(&elements[nElements]); }
+
+	shared_ptr<T>* begin() { return &elements[0]; }
+	shared_ptr<T>* end() { return &elements[nElements]; }
 
 private:
 	int capacite = 0, nElements = 0;
@@ -107,6 +110,8 @@ class Film : virtual public Item
 public:
 	void afficherSur(ostream& os) const override;
 	void afficherSpecifiqueSur(ostream& os) const;  // Affiche la parite de cette classe sans afficher la base virtuelle.
+
+	int operator()(Film* film) { return this->recette + film->recette; }
 
 	string realisateur; // (on suppose qu'il n'y a qu'un réalisateur).
 	int recette = 0; // Recette globale du film en millions de dollars

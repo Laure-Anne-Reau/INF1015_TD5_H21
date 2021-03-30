@@ -14,6 +14,9 @@
 #include <algorithm>
 #include <sstream>
 #include <forward_list>
+#include <map>
+#include <numeric>
+#include <functional>
 #include "cppitertools/range.hpp"
 #include "cppitertools/enumerate.hpp"
 #include "gsl/span"
@@ -376,7 +379,7 @@ int main(int argc, char* argv[])
 	forward_list<Item*> autreListeOriginale;		
 	for (auto& element : listeOriginale)
 		autreListeOriginale.push_front(element);
-	autreListeOriginale.reverse();
+	autreListeOriginale.reverse();	// ATTENTION A CHANGER utiliser iterateur et faire un insert_after
 
 	cout << ligneDeSeparation << endl;
 	cout << "Affichage de la copie de la forward_list dans l'ordre original : " << endl;
@@ -398,5 +401,47 @@ int main(int argc, char* argv[])
 	for (auto&& acteur : film.acteurs) {
 		cout << *acteur;
 	}
+
+	// TODO 2.1 - Conteneur contenant les items en ordre alphabetique
+	cout << ligneDeSeparation << endl;
+	map<string, Item*> conteneur;
+	for (auto& item : items)
+		conteneur[item->titre] = item.get();
+
+	for (const auto& [cle, valeur] : conteneur)
+		cout << "Cle : " << cle << endl << "Valeur : " << *valeur << endl;
+
+	// TODO 2.2 - Trouver un item dans le conteneur, afficher Le Hobbit
+	cout << ligneDeSeparation << endl;
+	auto recherche = conteneur.find("The Hobbit");
+	if (recherche->first == "The Hobbit")
+		cout << "Cle : " << recherche->first << endl << "Valeur : " << *recherche->second << endl;
+	else
+		cout << "L'item n'a pas ete trouve" << endl;
+
+
+	// TODO 3.1 - Copier les Film dans un vecteur en une ligne
+	cout << ligneDeSeparation << endl;
+	vector<Item*> copieListe;
+	copy_if(listeOriginale.begin(), listeOriginale.end(), back_inserter(copieListe), 
+		[](Item* item) { return dynamic_cast<Film*> (item) != nullptr; });
+	afficherListeItems(copieListe);
+
+
+	// TODO 3.2 - Somme des recettes des films en une ligne
+	cout << ligneDeSeparation << endl;
+
+	int somme = transform_reduce(copieListe.begin(), copieListe.end(), 0, plus{},
+					[](Item* item) { return dynamic_cast<Film*> (item)->recette; });
+	cout << "Somme totale des recettes des films : " << somme << endl;
+
+
+	// DEBUGAGE
+
+	for (auto& film : copieListe)
+	{
+		cout << film->titre << " " << dynamic_cast<Film*> (film)->recette << endl;;
+	}
 }
+
 
