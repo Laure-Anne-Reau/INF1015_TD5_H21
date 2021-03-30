@@ -1,4 +1,12 @@
-﻿// Solutionnaire du TD4 INF1015 hiver 2021
+﻿/*
+* INF1015 - TD no. 5 : Programme principal de la partie 5 du TD en programmation orientée objet.
+* \file		td5.cpp
+* \author	E.Barbeau et L-A.Reau
+* \date		4 avril 2021
+* Créé le	22 mars 2021
+*/
+
+// Solutionnaire du TD4 INF1015 hiver 2021
 // Par Francois-R.Boyer@PolyMtl.ca
 
 #pragma region "Includes"//{
@@ -292,7 +300,8 @@ void afficherListeItems(T& listeItems)
 #ifdef TEST
 // Pas demandés dans ce TD mais sert d'exemple.
 
-TEST(tests_ListeFilms, tests_simples) {
+TEST(tests_ListeFilms, tests_simples) 
+{
 	ListeFilms li;
 	EXPECT_EQ(li.size(), 0);
 	EXPECT_EQ(li.capacity(), 0);
@@ -308,7 +317,8 @@ TEST(tests_ListeFilms, tests_simples) {
 	li.detruire();
 }
 
-TEST(tests_ListeFilms, trouver) {
+TEST(tests_ListeFilms, trouver) 
+{
 	ListeFilms li;
 	Film films[3];
 	string realisateurs[] = {"a","b","c","e"};
@@ -394,7 +404,7 @@ int main(int argc, char* argv[])
 	int tailleVecteur = items.size();					// O(1)
 	vector<Item*> vecteurInverse(tailleVecteur);		// O(1)
 	int i = tailleVecteur-1;							// O(1)
-	for (auto& element : listeOriginale) { 			    // O(n)
+	for (auto& element : listeOriginale)   			    // O(n)
 		vecteurInverse[i--] = element;					// O(1)
 
 	cout << ligneDeSeparation << endl;
@@ -408,9 +418,8 @@ int main(int argc, char* argv[])
 
 	Film& film = dynamic_cast<Film&>(*items[0]);
 	cout << "Les acteurs du film " << film.titre << " sont : " << endl;
-	for (auto&& acteur : film.acteurs) {
+	for (auto&& acteur : film.acteurs)
 		cout << *acteur;
-	}
 
 
 	// TODO 2.1 - Conteneur contenant les items en ordre alphabetique

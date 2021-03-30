@@ -1,4 +1,15 @@
-﻿#pragma once
+﻿/*
+* INF1015 - TD no. 5 : Fichier source pour les structures de la partie 5 du TD en programmation orientée objet.
+* \file		structures_td5.hpp
+* \author	E.Barbeau et L-A.Reau
+* \date		4 avril 2021
+* Créé le	22 mars 2021
+*/
+
+// Solutionnaire du TD4 INF1015 hiver 2021
+// Par Francois-R.Boyer@PolyMtl.ca
+
+#pragma once
 // Structures mémoires pour une collection de films.
 
 #include <string>
@@ -66,20 +77,6 @@ public:
 	shared_ptr<T>& operator[] (int index) { return elements[index]; }
 	span<shared_ptr<T>> enSpan() const { return span(elements.get(), nElements); }
 
-	/*class Iterator {
-	public:
-		Iterator() = default;
-		Iterator(shared_ptr<T>* element) : element_(element) {};
-		shared_ptr<T>& operator*() const { return *element_; }
-		Iterator& operator++() { element_++; return *this; }  
-		bool operator== (const Iterator& b) { return this->element_ == b.element_; };
-	private:	
-		shared_ptr<T>* element_;
-	};*/
-
-	//Iterator begin() { return Iterator(&elements[0]); }
-	//Iterator end() { return Iterator(&elements[nElements]); }
-
 	shared_ptr<T>* begin() { return &elements[0]; }
 	shared_ptr<T>* end() { return &elements[nElements]; }
 
@@ -105,21 +102,17 @@ public:
 	int anneeSortie = 0;
 };
 
-class Film : virtual public Item
-{
+class Film : virtual public Item {
 public:
 	void afficherSur(ostream& os) const override;
 	void afficherSpecifiqueSur(ostream& os) const;  // Affiche la parite de cette classe sans afficher la base virtuelle.
-
-	int operator()(Film* film) { return this->recette + film->recette; }
 
 	string realisateur; // (on suppose qu'il n'y a qu'un réalisateur).
 	int recette = 0; // Recette globale du film en millions de dollars
 	ListeActeurs acteurs;
 };
 
-class Livre : virtual public Item
-{
+class Livre : virtual public Item {
 public:
 	Livre() = default;
 	explicit Livre(istream& is);
@@ -138,7 +131,6 @@ public:
 	void afficherSur(ostream& os) const override;
 };
 
-struct Acteur
-{
+struct Acteur {
 	string nom; int anneeNaissance=0; char sexe='\0';
 };
